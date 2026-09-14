@@ -261,7 +261,7 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
        Filled, the same hex carries the palette's own ink on top and reads 8.38:1; Clear goes
        3.11 -> 5.45. No hex moves; only the job each one does. */
     --sig-label:#141414;  /* plate 4 of the light set -- the ink beside the paints the buttons wear */
-    --sig-lift:8%;        /* filled has nowhere to lift to, so hover SINKS towards the label */
+    --sig-lift:8%;        /* Save File is filled and cannot lift, so its hover SINKS to the label */
     --sig-sink:12%;       /* the same 12% the generic pressed state lays over every other button */
     /* Export is built like Clear again - transparent, outline and label in its own colour - which
        settles the green: read as ink on white it has to be dark, and at this lightness a
@@ -388,26 +388,31 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
                                      color-mix(in srgb,var(--main-text) 12%,transparent));}
   #export:not(:disabled):active{background:color-mix(in srgb,var(--green) var(--sig-press),transparent);}
 
-  /* LIGHT ONLY: Clear and Save File are filled. Dark keeps the outline recipe above, because there
-     the same two hexes are already inks -- the red reads 5.30 on that panel and the green 8.15.
+  /* LIGHT ONLY. Save File is FILLED: at L* 74 that green is a fill, and asked to be an ink it
+     measured 2.07:1 for the label and 2.14 for the outline -- under even the 3:1 a non-text
+     indicator wants. Filled it carries #141414 and reads 8.38. Dark keeps the outline recipe
+     above, because there the same two hexes are already inks, 5.44 and 6.89 as they stand.
      :not(:disabled) on every line so a button greyed out mid-export ("Encoding MP4...") still
-     gets .btn:disabled rather than staying a solid colour it can no longer act on. */
-  :root[data-theme="light"] .btn.alert:not(:disabled){--sig-bg:var(--alert);}
-  :root[data-theme="light"] #export:not(:disabled){--sig-bg:var(--green);}
-  :root[data-theme="light"] .btn.alert:not(:disabled),
+     gets .btn:disabled rather than a colour it can no longer act on. */
+  /* Clear keeps the outline and swaps only its WORD to the dark ink: 3.11 -> 16.1, while the red
+     stays on the rim and the trash glyph, where 3.30 is what an indicator needs. It is one rule
+     because the colour stays on the button -- the icon is `stroke="currentColor"`, so it goes on
+     lifting with the border through every state on its own. Filling this one too was tried and
+     rejected on sight: two solid plates made the DESTRUCTIVE control the loudest thing on the
+     drawing panel while the primary one sat two panels below it. */
+  :root[data-theme="light"] .btn.alert:not(:disabled) .tw{color:var(--sig-label);}
   :root[data-theme="light"] #export:not(:disabled){
-    background:var(--sig-bg);border-color:var(--sig-bg);color:var(--sig-label);}
-  :root[data-theme="light"] .btn.alert:not(:disabled):hover,
+    background:var(--green);border-color:var(--green);color:var(--sig-label);}
+  /* filled has nowhere to lift to, so hover and press SINK towards the label instead */
   :root[data-theme="light"] #export:not(:disabled):hover{
-    background:color-mix(in srgb,var(--main-text) var(--sig-lift),var(--sig-bg));
-    border-color:color-mix(in srgb,var(--main-text) var(--sig-lift),var(--sig-bg));
+    background:color-mix(in srgb,var(--main-text) var(--sig-lift),var(--green));
+    border-color:color-mix(in srgb,var(--main-text) var(--sig-lift),var(--green));
     color:var(--sig-label);}
-  /* The generic pressed state is a 12% overlay, but these two set `background` outright and would
-     wipe it, so they carry the same 12% as a mix of their own. */
-  :root[data-theme="light"] .btn.alert:not(:disabled):active,
+  /* The generic pressed state is a 12% overlay, but this one sets `background` outright and would
+     wipe it, so it carries the same 12% as a mix of its own. */
   :root[data-theme="light"] #export:not(:disabled):active{
-    background:color-mix(in srgb,var(--main-text) var(--sig-sink),var(--sig-bg));
-    border-color:color-mix(in srgb,var(--main-text) var(--sig-sink),var(--sig-bg));
+    background:color-mix(in srgb,var(--main-text) var(--sig-sink),var(--green));
+    border-color:color-mix(in srgb,var(--main-text) var(--sig-sink),var(--green));
     background-image:none;}
 
   /* ---------------- tabs ---------------- */
