@@ -41,10 +41,19 @@ sub_once(r'<!-- Open Graph / social preview -->.*?<meta name="twitter:image"[^>]
          '', 'strip og', re.S)
 sub_once(r'<!-- Cloudflare Web Analytics.*?</script>\n', '', 'strip analytics', re.S)
 
-for key in ('blockmode:v1', 'blockmode:onboarded', 'blockmode:theme'):
+for key in ('blockmode:v1', 'blockmode:onboarded', 'blockmode:theme', 'blockmode:hints'):
     ns = key.replace('blockmode:', 'blockmode:lab:')
     s, n = re.subn(re.escape("'" + key + "'"), "'" + ns + "'", s)
     checks.append(('namespace ' + key, n >= 1))
+
+# Mirror of promote-lab's leftovers check. A prod key surviving here is a key this
+# script was never told about, and the lab would then share that storage jar with the
+# real product -- exactly what the namespace exists to prevent. Refuse to write.
+leaked = sorted(set(re.findall(r"'(blockmode:(?!lab:)[A-Za-z0-9_:-]+)'", s)))
+if leaked:
+    sys.stderr.write('make-lab: prod storage keys survived: ' + ', '.join(leaked) + '\n')
+    sys.stderr.write('  add them to the namespace loop above, then run again\n')
+    sys.exit(1)
 
 bad = [label for label, ok in checks if not ok]
 if bad:
