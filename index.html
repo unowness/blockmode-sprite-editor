@@ -17,8 +17,8 @@
 <meta name="twitter:description" content="Draw block-ASCII sprites in your browser — up to 16 paints, animation, and JSON/SVG/PNG/MP4/TXT export.">
 <meta name="twitter:image" content="https://blockmode.app/blockmode-opengraph.png">
 <meta name="description" content="Draw block-ASCII sprites in your browser — up to 16 paints, animation, and JSON/SVG/PNG/MP4/TXT export. No install, no account.">
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<link rel="icon" type="image/png" href="assets/brand/favicon.png">
+<link rel="apple-touch-icon" href="assets/brand/favicon.png">
 <!-- Set data-theme before first paint, or the first frame is the wrong theme and then flips.
      Light is written FIRST and only a stored Dark takes it back, so a browser that refuses to
      answer about storage lands on the default rather than on the other one. -->
@@ -290,8 +290,8 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
      already a white raster and the words are already the ink. */
   :root[data-theme="light"] .logo.logo-light{
     display:block;background-color:var(--accent);
-    -webkit-mask:url("logo-blockmode-white-56x56.svg") center/56px 56px no-repeat;
-            mask:url("logo-blockmode-white-56x56.svg") center/56px 56px no-repeat;}
+    -webkit-mask:url("assets/brand/logo-blockmode-white-56x56.svg") center/56px 56px no-repeat;
+            mask:url("assets/brand/logo-blockmode-white-56x56.svg") center/56px 56px no-repeat;}
 
   *{box-sizing:border-box;}
   body{margin:0;background:var(--page);color:var(--main-text);font-family:var(--font-ui);}
@@ -864,7 +864,7 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
 <div class="wrap">
   <header>
     <div class="brand">
-      <img class="logo logo-dark" src="favicon.png" width="56" height="56" alt="Blockmode logo">
+      <img class="logo logo-dark" src="assets/brand/favicon.png" width="56" height="56" alt="Blockmode logo">
       <span class="logo logo-light" role="img" aria-label="Blockmode logo"></span>
       <h1 class="title">Blockmode<br>ASCII Sprite Editor</h1>
     </div>
@@ -2080,7 +2080,7 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
      H.264 isn't available (e.g. Firefox). */
   function loadScript(src){return new Promise(function(res,rej){var s=document.createElement('script');s.src=src;s.onload=res;s.onerror=function(){rej(new Error(src));};document.head.appendChild(s);});}
   var muxerLoad=null;
-  function ensureMuxer(){if(window.Mp4Muxer)return Promise.resolve();if(!muxerLoad)muxerLoad=loadScript('mp4-muxer.min.js');return muxerLoad;}
+  function ensureMuxer(){if(window.Mp4Muxer)return Promise.resolve();if(!muxerLoad)muxerLoad=loadScript('vendor/mp4-muxer.min.js');return muxerLoad;}
   var expLabel0=null;
   function expStatus(t){var b=$('export');if(!b)return;if(t){if(expLabel0==null)expLabel0=b.innerHTML;b.textContent=t;b.disabled=true;}else{if(expLabel0!=null)b.innerHTML=expLabel0;b.disabled=false;expLabel0=null;}}
   /* H.264 has hard per-level frame-size limits, so the video render is capped independently of
