@@ -1,11 +1,11 @@
-# Blockmode — Block Sprite Editor
+# Blockmode — ASCII Sprite Editor
 
 A tiny, dependency-free editor for block-ASCII sprites — the kind used in
 terminal / PETSCII / C64-style games. Draw with block and box-drawing glyphs in
 up to 16 paints over an optional background, animate them frame by frame, and
 export to JSON, SVG, PNG, MP4 or plain text.
 
-**Live:** https://unowness.github.io/block-sprite-editor/
+**Live:** https://blockmode.app
 
 It is one self-contained HTML file with no build step and no backend — copy
 `index.html` anywhere and open it in a browser.
@@ -65,22 +65,28 @@ is missing (Firefox today), the editor falls back to a WebM recording.
 
 ```json
 {
-  "version": 3,
+  "version": 4,
   "id": "sprite",
   "width": 8,
   "height": 6,
-  "body_color": "#6f74c0",
-  "accent_color": "#b9a5f0",
-  "decoration_color": "#f0a5c0",
-  "extra_color": "#5CE422",
-  "background_color": "#101018",
+  "palette": [
+    { "key": "b", "name": "Main",   "color": "#0057F0" },
+    { "key": "a", "name": "Accent", "color": "#F05940" },
+    { "key": "d", "name": "Detail", "color": "#8BBF05" },
+    { "key": "e", "name": "Extra",  "color": "#141414" }
+  ],
+  "body_color": "#0057F0",
+  "accent_color": "#F05940",
+  "decoration_color": "#8BBF05",
+  "extra_color": "#141414",
+  "background_color": null,
   "fps": 8,
   "active": 0,
   "custom_glyphs": ["▀", "▄"],
   "frames": [
     {
       "glyphs": ["row strings, one character per cell"],
-      "colors": ["same dimensions; b/a/d/e per cell, space where empty"],
+      "colors": ["same dimensions; one palette key per cell, space where empty"],
       "accent_mask": ["same dimensions; 'X' where the cell uses the accent color"]
     }
   ],
@@ -90,19 +96,39 @@ is missing (Firefox today), the editor falls back to a WebM recording.
 }
 ```
 
-- `colors` encodes which paint each cell uses: `b` Main, `a` Accent,
-  `d` Detail, `e` Extra, space for an empty cell.
+- `palette` is the authoritative list of paints, in order. `key` is the single
+  character `colors` uses for that paint: `b` `a` `d` `e` for the four every
+  sprite starts with, then `1`–`9` and `A`–`C` for paints you add, 16 in all.
+- `body_color` / `accent_color` / `decoration_color` / `extra_color` repeat the
+  first four paints so a reader written for **version 3** still opens the file.
+  It loses only the paints it could not have drawn anyway.
+- `colors` says which paint each cell uses; a space means an empty cell.
 - `background_color` is `null` when the background is switched off.
 - `custom_glyphs` holds the custom panel, preserving slot positions
   (internal gaps stay as `""`, trailing empties are trimmed).
 - The top-level `glyphs` / `colors` / `accent_mask` repeat the **active frame**
   so single-frame consumers can read a sprite without understanding `frames`.
-- `accent_mask` is likewise kept for readers that predate the 4-color model;
-  `colors` is the authoritative field.
+- `accent_mask` predates the multi-paint model and is kept for readers that
+  still expect it; `colors` is the field to trust.
 
 Every glyph is a single-cell character — ASCII, Unicode Block Elements
 (U+2580–U+259F) or Box Drawing (U+2500–U+257F) — so sprites render at a fixed
 width in any terminal.
+
+## Repository layout
+
+```
+index.html                 the editor — the whole product, no build step
+lab.html                   the same editor with its own localStorage namespace,
+                           no analytics and noindex, for layout experiments
+assets/brand/              favicon and the light-theme wordmark mask
+assets/onboarding/         the first-run walkthrough images
+vendor/mp4-muxer.min.js    vendored WebCodecs MP4 muxer, loaded on first export
+tools/make-lab.py          regenerate lab.html from index.html
+tools/promote-lab.py       the inverse: ship lab.html as index.html
+blockmode-opengraph.png    social preview; its URL is public, so it stays at the root
+CNAME, .nojekyll           GitHub Pages, which serves this repository from the root
+```
 
 ## License
 
