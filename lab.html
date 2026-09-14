@@ -597,30 +597,38 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     display:inline-flex;align-items:center;justify-content:center;
     background:transparent;border:0;border-radius:50%;cursor:pointer;}
   .hintmark::after{content:'';position:absolute;inset:-6px;border-radius:50%;}
-  .hintmark .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);
+  .hintmark .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);
     box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 22%,transparent);
     transition:box-shadow .18s ease,background-color .18s ease,border-color .18s ease;}
-  .hintmark:hover .dot{box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 16%,transparent);}
-  /* Read: the fill goes, a hairline stays. Same dot, same place, no colour asking for attention. */
-  .hintmark.read .dot{background:transparent;border:1.5px solid var(--stroke-hover);box-shadow:none;}
-  .hintmark.read:hover .dot{border-color:var(--main-text);}
-  /* Open: lit again while its card is on screen, so you can see which dot you are reading. */
+  .hintmark:hover .dot{box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent);}
+  /* Read: a hairline at the border step, which on this ground is nearly the quietest mark the
+     page can make -- present if you look for it, silent if you are drawing. */
+  .hintmark.read .dot{background:transparent;border:1px solid var(--stroke);box-shadow:none;}
+  .hintmark.read:hover .dot{border-color:var(--stroke-hover);}
+  /* Lit again while its own card is open, so you can see which dot you are reading. */
   .hintmark[aria-expanded="true"] .dot,
   .hintmark.read[aria-expanded="true"] .dot{background:var(--accent);border-color:transparent;
-    box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 16%,transparent);}
+    box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent);}
 
-  /* The card. 360 is the operator's number; max-width keeps it inside a 375 phone with the page's
-     own 16px gutter. Fixed, because a mark can sit in a scrolling column -- placePop re-runs on
-     scroll and resize rather than letting the card ride off.
-     The shadow is the one place in this interface that has one. Five stops, each roughly double
-     the blur of the last at a low alpha, so there is no visible edge anywhere in the falloff --
-     a card that floats rather than a card with a drop shadow. Dark needs a deeper set: the same
-     alphas over #141415 would be invisible. */
-  .hintpop{position:fixed;z-index:60;width:360px;max-width:calc(100vw - 32px);
+  /* The card. Narrower than it was and taller in the middle: 320 wide, 32 of air above and below
+     against 24 at the sides, so the text sits in a column rather than in a band. A title names
+     what the dot was standing next to, and the cross shares its line -- which is what keeps the
+     padding reading as padding instead of as a gap around a floating control.
+     Fixed, because a mark can sit in a scrolling column: placePop re-runs on scroll and resize.
+     The shadow is the only one in this interface, and deliberately so -- this is the one thing
+     ABOVE the page rather than in it. Five stops, each about double the blur of the last at a low
+     alpha, so nothing in the falloff has an edge. */
+  .hintpop{position:fixed;z-index:60;width:320px;max-width:calc(100vw - 32px);
     background:var(--btn-background);border:1px solid var(--stroke);border-radius:var(--r-tool);
     box-shadow:var(--shadow-pop);
-    padding:26px 32px;color:var(--main-text);font-size:13px;line-height:1.55;}
+    padding:32px 24px;color:var(--main-text);font-size:13px;line-height:1.55;}
   .hintpop[hidden]{display:none;}
+  /* -8 right and -4 up pulls the 32px cross back into the optical corner: its own padding is the
+     rest of the inset, so the glyph lands where a 24px gutter would put it. */
+  .hintpop__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+    margin:0 -8px 10px 0;}
+  .hintpop__title{font-size:13px;font-weight:500;line-height:1.55;color:var(--main-text);}
+  .hintpop__head .hint-x{margin-top:-4px;}
   .hintpop a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;}
   .hintpop a:hover{color:color-mix(in srgb,var(--main-text) 10%,var(--accent));}
 
@@ -1101,7 +1109,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
 <!-- Onboarding modal (shown on first visit; re-openable via the footer "Show Onboarding" link) -->
 <!-- One popover, moved and refilled per mark: three cards would be three copies of the same
      box drifting apart. It sits outside .wrap so no panel's overflow can clip it. -->
-<div class="hintpop" id="hintpop" role="dialog" aria-label="Hint" hidden>
+<div class="hintpop" id="hintpop" role="dialog" aria-labelledby="hintpoptitle" hidden>
+  <div class="hintpop__head">
+    <span class="hintpop__title" id="hintpoptitle"></span>
+    <button class="hint-x" id="hintpopx" title="Close" aria-label="Close this hint"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M11 3L3 11"/><path d="M11 11L3 3"/></svg></button>
+  </div>
   <span id="hintpoptext"></span>
 </div>
 
@@ -2634,6 +2646,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   var HINT_MARK={hintsave:'hintsavemark',hintdraw:'hintdrawmark',hint:'hintmark'};
   /* Copy carried over word for word, pointer/touch split included: a phone has no right button
      and no Backspace, and these sentences already knew that. */
+  /* Each card says what it is about before it explains it. The titles are the marks' own
+     aria-labels without the word Hint: the dot stood next to something, and this names it. */
+  var HINT_TITLE={hintsave:'Where your sprites are kept',
+                  hintdraw:'Painting and sampling',
+                  hint:'The custom row'};
   var HINT_HTML={};
   HINT_HTML.hint=isCoarse()
     ? 'Custom panel: pick a glyph, then tap an empty cell to keep it. Tap a kept glyph to draw with it, tap again to clear \u2014 more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'.'
@@ -2688,6 +2705,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     if(!m)return;
     if(hintCur)hintHide(false);
     hintCur=id;
+    $('hintpoptitle').textContent=HINT_TITLE[id]||'Hint';
     $('hintpoptext').innerHTML=HINT_HTML[id]||'';
     p.hidden=false;
     m.setAttribute('aria-expanded','true');
@@ -2717,6 +2735,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     if(e.target.closest&&e.target.closest('#hintpop'))return;
     hintHide(false);
   });
+  $('hintpopx').onclick=function(){hintHide(true);};
   /* Capture phase: Escape also cancels a selection, and an open card should eat it first rather
      than clearing someone's marquee behind the popover. */
   document.addEventListener('keydown',function(e){
