@@ -578,6 +578,36 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   .hint-x:hover{color:var(--main-text);}
   .hint-x svg{width:14px;height:14px;display:block;}
 
+  /* ---------------- hint marks + popover ---------------- */
+  /* A hint is no longer a panel standing in the layout waiting to be closed. It is a MARK, the
+     size of a caption, standing beside the thing it explains, and the explanation arrives only
+     when it is asked for. Three grey slabs across the page become three 24px pills.
+     The pill is a caption in a ring: the same 10px uppercase the group labels use, so it reads as
+     part of the interface's own lettering rather than as a badge dropped on top of it. */
+  .hintmark{flex:none;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px 0 7px;
+    background:transparent;border:1px solid var(--stroke);border-radius:999px;
+    color:var(--tool-text-id);font-family:var(--font-ui);font-size:10px;letter-spacing:.08em;
+    text-transform:uppercase;line-height:1;cursor:pointer;}
+  .hintmark:hover{color:var(--main-text);border-color:var(--stroke-hover);}
+  .hintmark[aria-expanded="true"]{color:var(--accent);border-color:var(--accent);}
+  /* Unread is one dot the size of a full stop. That is the whole of the "there is something here"
+     signal -- no colour on the word, no pulse, nothing that moves while someone is drawing. Read,
+     the dot goes and the pill stays: the help does not leave, only its insistence does. */
+  .hintmark .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);flex:none;}
+  .hintmark.read .dot{background:transparent;border:1px solid var(--stroke);}
+  /* The popover. 360 is the operator's number; max-width keeps it inside a 375 phone with the
+     same 16px gutter the page uses. position:fixed because the mark can sit inside a scrolling
+     column, and the card is placed against the VIEWPORT -- placePop re-runs on scroll and resize
+     rather than the card riding off on its own. */
+  .hintpop{position:fixed;z-index:60;width:360px;max-width:calc(100vw - 32px);
+    display:flex;align-items:flex-start;gap:9px;
+    background:var(--btn-background);border:1px solid var(--stroke);border-radius:var(--r-tool);
+    padding:13px 9px 13px 16px;color:var(--main-text);font-size:13px;line-height:1.5;}
+  .hintpop[hidden]{display:none;}
+  .hintpop span{display:block;}
+  .hintpop a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;}
+  .hintpop a:hover{color:color-mix(in srgb,var(--main-text) 10%,var(--accent));}
+
   /* ---------------- animation timeline (a transparent bar of tool blocks) ---------------- */
   /* a row of .bars now, so the column's own 8px gap spaces it and it carries no margin of its own */
   .animbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;margin:0;}
@@ -603,6 +633,10 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      CUSTOM merged into the glyph stack. With the caption gone the first glyph group holds the gap
      open itself, at the same 40px that separates the stage from Paint. */
   .hint[hidden]+.pgroup{margin-top:32px;}   /* + the palette's own 8px gap = 40 */
+  /* The caption used to hold this break open with its own 32px bottom margin. With the caption
+     gone -- it is a mark in the CUSTOM row now -- the break has to be stated by the two groups
+     that are left facing each other. */
+  #customgroup+.pgroup{margin-top:32px;}
   /* Paint -> palette is one block: a cluster gap inside it, the section gap above it */
   .paintbar{margin-top:var(--space-section);}
   /* An explicit column. The groups were already one per line because each is too wide to share
@@ -874,6 +908,8 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
         <div class="tabs" id="tabs" role="group" aria-label="Open sprites"></div>
         <button class="btn icon" id="addtab" title="New sprite" aria-label="New sprite"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M7 2V12"/><path d="M12 7L2 7"/></svg></button>
         <button class="btn icon" id="deltab" title="Close sprite" aria-label="Close sprite"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M1.5 5L3 13H11L12.5 5"/><path d="M0.5 3H13.5"/><path d="M5 3V1H9V3"/></svg></button>
+        <!-- The note about where sprites live belongs to the row that holds the sprites. -->
+        <button class="hintmark" id="hintsavemark" aria-expanded="false" aria-controls="hintpop" aria-label="Hint: where your sprites are kept"><span class="dot"></span>Hint</button>
       </div>
       <div class="tool">
         <span class="tool-label">Canvas</span>
@@ -919,13 +955,6 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
           <button class="btn" id="play" aria-pressed="false"><span class="iw"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-linejoin="bevel"><path d="M2.5 12.5V1.5L12.5 7L2.5 12.5Z"/></svg></span><span class="pw">Play</span></button>
           <button class="btn" id="stop" aria-pressed="false"><span class="iw"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-linejoin="bevel"><path d="M2 1.5H5V12.5H2V1.5Z"/><path d="M9 1.5H12V12.5H9V1.5Z"/></svg></span><span class="pw">Pause</span></button>
         </div>
-      </div>
-      <!-- The one thing nothing else on this page says out loud. It rides in Row B rather than
-           under a section because that row is where the document lives - tabs, File, Canvas - and
-           because the row had an empty half doing nothing. -->
-      <div class="hint hint-inline" id="hintsave">
-        <span id="hintsavetext"></span>
-        <button class="hint-x" id="hintsavex" title="Dismiss" aria-label="Dismiss this hint"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M11 3L3 11"/><path d="M11 11L3 3"/></svg></button>
       </div>
     </div>
 
@@ -973,6 +1002,8 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     <div class="stage-bl">
       <button class="btn" id="erase" title="Eraser" aria-pressed="false"><span class="iw"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M6.45455 11.9545L13 5.40909L8.63636 1.04546L1 8.68182L4.27273 11.9545H12.4545"/><path d="M6.45459 3.22727L10.8182 7.59091"/></svg></span><span class="tw">Eraser</span></button>
       <button class="btn" id="select" title="Select" aria-pressed="false"><span class="iw"><svg viewBox="0 0 14 14" fill="currentColor"><path d="M0.5 12.5V10.8496H1.5V12.5H3.15039V13.5H1.5C0.947715 13.5 0.5 13.0523 0.5 12.5ZM8.65039 12.5V13.5H5.34961V12.5H8.65039ZM12.5 12.5V10.8496H13.5V12.5C13.5 13.0523 13.0523 13.5 12.5 13.5H10.8496V12.5H12.5ZM1.5 5.34961V8.65039H0.5V5.34961H1.5ZM13.5 5.34961V8.65039H12.5V5.34961H13.5ZM0.5 1.5C0.5 0.947716 0.947716 0.500001 1.5 0.5H3.15039V1.5H1.5V3.15039H0.5V1.5ZM12.5 1.5H10.8496V0.5H12.5C13.0523 0.5 13.5 0.947716 13.5 1.5V3.15039H12.5V1.5ZM8.65039 0.5V1.5H5.34961V0.5H8.65039Z"/></svg></span><span class="tw">Select</span></button>
+      <!-- What the two buttons do, asked for where the drawing happens. -->
+      <button class="hintmark" id="hintdrawmark" aria-expanded="false" aria-controls="hintpop" aria-label="Hint: painting and sampling"><span class="dot"></span>Hint</button>
     </div>
     <div class="stage-br">
       <button class="btn" id="undo"><span class="iw"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M5 12L10.4 12C10.9601 12 11.2401 12 11.454 11.891C11.6422 11.7951 11.7951 11.6422 11.891 11.454C12 11.2401 12 10.9601 12 10.4L12 5.6C12 5.03995 12 4.75992 11.891 4.54601C11.7951 4.35785 11.6422 4.20487 11.454 4.10899C11.2401 4 10.9601 4 10.4 4L3 4"/><path d="M7 1L3 4L7 7"/></svg></span><span class="tw">Undo</span></button>
@@ -988,11 +1019,6 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     <div class="fspanel" id="fscustom"><span class="fscustom-label">CUSTOM</span></div>
   </div>
 
-  <!-- How the two mouse buttons differ, said where the drawing happens. -->
-  <div class="hint" id="hintdraw">
-    <span id="hintdrawtext"></span>
-    <button class="hint-x" id="hintdrawx" title="Dismiss" aria-label="Dismiss this hint"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M11 3L3 11"/><path d="M11 11L3 3"/></svg></button>
-  </div>
 
   <!-- Paint + glyph palette: one block.
        Choosing a colour and choosing a glyph are the same decision — "what does this stroke lay
@@ -1010,13 +1036,6 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   <!-- Glyph palette -->
   <div class="palette" id="palette"></div>
 
-  <!-- The hint explains the Custom row, so buildPalette() lifts it INTO the palette and drops it
-       directly under CUSTOM — a caption sits under the thing it captions, not above the panel
-       before it. It lives out here in the source only because the palette itself is JS-built. -->
-  <div class="hint" id="hint">
-    <span id="hinttext"></span>
-    <button class="hint-x" id="hintx" title="Dismiss" aria-label="Dismiss this hint"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M11 3L3 11"/><path d="M11 11L3 3"/></svg></button>
-  </div>
 
   <!-- Sprite JSON — box first, export bar under it (Figma 42:363) -->
   <div class="iobox">
@@ -1064,6 +1083,13 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
 </div>
 
 <!-- Onboarding modal (shown on first visit; re-openable via the footer "Show Onboarding" link) -->
+<!-- One popover, moved and refilled per mark: three cards would be three copies of the same
+     box drifting apart. It sits outside .wrap so no panel's overflow can clip it. -->
+<div class="hintpop" id="hintpop" role="dialog" aria-label="Hint" hidden>
+  <span id="hintpoptext"></span>
+  <button class="hint-x" id="hintpopx" title="Close" aria-label="Close this hint"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor"><path d="M11 3L3 11"/><path d="M11 11L3 3"/></svg></button>
+</div>
+
 <div class="onb" id="onb" hidden>
   <div class="onb__scrim" id="onbScrim"></div>
   <div class="onb__card" role="dialog" aria-modal="true" aria-labelledby="onbTitle">
@@ -1743,17 +1769,17 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     var cbox=document.createElement('div');cbox.className='pgroup';cbox.id='customgroup';
     var clab=document.createElement('div');clab.className='plabel';clab.textContent='CUSTOM';cbox.appendChild(clab);
     var cgrid=document.createElement('div');cgrid.className='pgrid';cgrid.id='customgrid';cbox.appendChild(cgrid);
-    /* A permanent way out to more characters, at the end of the row it fills. The hint says the
-       same thing but the hint can be dismissed; this cannot, and it sits where the need appears
-       rather than in a sentence you already closed.
-       Remix Icon external-link-line, verbatim in its own 24 box like the theme toggle - and it is
-       an <a>, not a button, so the browser's own "open in new tab" still works on it. */
-    var more=document.createElement('a');more.className='btn icon';more.id='moreglyphs';
-    more.href='https://glyphy.io/cool-symbols';more.target='_blank';more.rel='noopener';
-    more.title='More glyphs at glyphy.io — copy one and paste it into a cell';
-    more.setAttribute('aria-label',more.title);
-    more.innerHTML='<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 6V8H5V19H16V14H18V20C18 20.5523 17.5523 21 17 21H4C3.44772 21 3 20.5523 3 20V7C3 6.44772 3.44772 6 4 6H10ZM21 3V11H19L18.9999 6.413L11.2071 14.2071L9.79289 12.7929L17.5849 5H13V3H21Z"/></svg>';
-    cbox.appendChild(more);
+    /* The row is FULL: twenty cells, a 48px label and 960px of palette leave 46px of slack, and
+       a mark needs 64. Something had to give, and it is the glyphy link -- which was only ever
+       here because the old caption could be dismissed and this could not ("the hint says the same
+       thing but the hint can be closed"). A mark cannot be dismissed either, and the same link is
+       inside the card it opens, so the way out to more characters is still one step from the row
+       it serves, and the row is still one line. */
+    var cmark=document.createElement('button');cmark.className='hintmark';cmark.id='hintmark';
+    cmark.setAttribute('aria-expanded','false');cmark.setAttribute('aria-controls','hintpop');
+    cmark.setAttribute('aria-label','Hint: the custom row');
+    cmark.innerHTML='<span class="dot"></span>Hint';
+    cbox.appendChild(cmark);
     pal.appendChild(cbox);
     var hint=$('hint');if(hint)pal.appendChild(hint);   /* caption goes under the panel it captions */
     GROUPS.forEach(function(grp){
@@ -2571,55 +2597,112 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      The list is matched against HINT_IDS on the way in AND on the way out, so a hand-edited
      localStorage can only ever hide a hint. Without that check the stored value is a list of
      element ids handed straight to getElementById, and 'grid' in there would hide the canvas. */
+  /* Hints are MARKS now, not slabs. Three grey panels used to stand in the layout carrying 87,
+     149 and 146 characters at the full width of the column, and the only thing you could do with
+     one was close it forever. What is on the page now is a 24px pill beside the thing it explains;
+     the sentence lives in a 360px card that opens when the pill is clicked.
+     What that buys beyond the room: the copy sits in a readable measure at last (~45 characters a
+     line instead of ~120), and help stops being something you dismiss -- the mark never leaves, so
+     the answer is always one click from the control it is about.
+     The stored set means READ, not CLOSED: same key, same shape, opposite sense. An unread mark
+     wears a filled dot, a read one an empty ring. The footer's "Show Onboarding" still clears it,
+     because asking for the introduction again should light the marks up again. */
   var HINT_KEY='blockmode:lab:hints', HINT_IDS=['hintsave','hintdraw','hint'];
-  function hintsClosed(){
+  var HINT_MARK={hintsave:'hintsavemark',hintdraw:'hintdrawmark',hint:'hintmark'};
+  /* Copy carried over word for word, pointer/touch split included: a phone has no right button
+     and no Backspace, and these sentences already knew that. */
+  var HINT_HTML={};
+  HINT_HTML.hint=isCoarse()
+    ? 'Custom panel: pick a glyph, then tap an empty cell to keep it. Tap a kept glyph to draw with it, tap again to clear \u2014 more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'.'
+    : 'Custom panel: pick a glyph and click on an empty cell to keep it, or type / paste your own \u2014 thousands more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'. Backspace clears a cell.';
+  HINT_HTML.hintdraw=isCoarse()
+    ? 'Drag to paint. Hold a cell to sample its glyph and paint — hold an empty one to erase.'
+    : 'Left button paints, click or drag. Right button, or Alt-click, samples a cell: its glyph and paint become your brush — sample an empty cell to erase.';
+  HINT_HTML.hintsave='Tabs live in this browser only — Save File from time to time to keep a sprite for good.';
+
+  /* Filtered on the way in and on the way out, as the dismissal list always was: a hand-edited
+     localStorage can only ever mark something read, never name an element for the code to touch. */
+  function hintsRead(){
     var raw='';try{raw=localStorage.getItem(HINT_KEY)||'';}catch(e){}
     return raw.split(',').filter(function(id){return HINT_IDS.indexOf(id)>=0;});
   }
-  function closeHint(id){
-    $(id).hidden=true;
-    var seen=hintsClosed();
-    if(seen.indexOf(id)<0){seen.push(id);try{localStorage.setItem(HINT_KEY,seen.join(','));}catch(e){}}
+  function syncMarks(){
+    var seen=hintsRead();
+    HINT_IDS.forEach(function(id){
+      var m=$(HINT_MARK[id]);if(m)m.classList.toggle('read',seen.indexOf(id)>=0);
+    });
   }
-  /* And a way back, because "like the onboarding" includes the part where the onboarding can be
-     asked for again. The footer link is that ask - it means show me the introduction again, and
-     the hints are the introduction that lives on the page rather than over it. Only the link
-     calls this; the first-visit auto-open does not, so a new user's untouched hints stay put. */
+  function hintMarkRead(id){
+    var seen=hintsRead();
+    if(seen.indexOf(id)<0){seen.push(id);try{localStorage.setItem(HINT_KEY,seen.join(','));}catch(e){}}
+    syncMarks();
+  }
+  /* And the way back. The footer link means show me the introduction again, and the marks are the
+     introduction that lives on the page rather than over it. */
   function reopenHints(){
     try{localStorage.removeItem(HINT_KEY);}catch(e){}
-    HINT_IDS.forEach(function(id){$(id).hidden=false;});
+    syncMarks();
   }
-  /* The hint described a keyboard the touch build does not have — Backspace, typing into a cell.
-     The code already splits these two worlds with isCoarse(); the copy now splits with it. */
-  /* The palette used to end with a second note pointing at glyphy.io; it said the same thing this
-     one does, 900px lower down and out of sight of the panel it was about. Folded in here, one
-     line, written out to the 892px a section hint holds at 960 content: 878 for the pointer copy.
-     Two words of that are the sentence finally saying what Backspace clears - "Backspace clears."
-     never named its object. The touch line stays at 800 and is not padded: it wraps on a phone
-     whatever it says. innerHTML rather than textContent because of the link, and the string is
-     this file's own - nothing typed by anyone reaches it. */
-  $('hinttext').innerHTML=isCoarse()
-    ? 'Custom panel: pick a glyph, then tap an empty cell to keep it. Tap a kept glyph to draw with it, tap again to clear \u2014 more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'.'
-    : 'Custom panel: pick a glyph and click on an empty cell to keep it, or type / paste your own \u2014 thousands more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'. Backspace clears a cell.';
-  /* `hidden` rather than an inline display:none, so the stylesheet can see the dismissal and move
-     the section gap down to the paint bar */
-  $('hintx').onclick=function(){closeHint('hint');};
-  /* Both one line. The pointer line is written to the width of the box rather than trimmed to
-     its own: 881 of the 892 available at 960 content, once the left padding, the gap and the
-     32px X are taken out. The touch line stays short - it wraps on a phone whatever it says,
-     and every word added there is another line under the stage. */
-  $('hintdrawtext').textContent=isCoarse()
-    ? 'Drag to paint. Hold a cell to sample its glyph and paint — hold an empty one to erase.'
-    : 'Left button paints, click or drag. Right button, or Alt-click, samples a cell: its glyph and paint become your brush — sample an empty cell to erase.';
-  $('hintdrawx').onclick=function(){closeHint('hintdraw');};
-  /* No pointer/touch split here: losing your work to a cleared browser is the same on both. */
-  /* Names the button by its label rather than describing what it writes. "Export JSON" stopped
-     being true the moment that button became Save File, and a hint that names a control nobody
-     can find is worse than no hint. */
-  $('hintsavetext').textContent='Tabs live in this browser only — Save File from time to time to keep a sprite for good.';
-  $('hintsavex').onclick=function(){closeHint('hintsave');};
-  /* Applied after all three are written, so the restore sees them in their finished state. */
-  hintsClosed().forEach(function(id){$(id).hidden=true;});
+
+  var hintCur=null;   /* the id whose card is open, or null */
+  /* Placed against the VIEWPORT, not the document -- the card is position:fixed, so this runs
+     again on scroll and on resize instead of letting it ride away from its mark. Under the mark
+     by default, flipped above when the bottom would leave the screen, and always held inside the
+     page's own 16px gutter, which is what keeps it whole on a 375 phone. */
+  function placePop(){
+    if(!hintCur)return;
+    var m=$(HINT_MARK[hintCur]),p=$('hintpop');
+    if(!m)return;
+    var r=m.getBoundingClientRect(),pr=p.getBoundingClientRect(),M=16;
+    var left=Math.min(Math.max(M,r.left),Math.max(M,innerWidth-pr.width-M));
+    var top=r.bottom+8;
+    if(top+pr.height>innerHeight-M)top=Math.max(M,r.top-8-pr.height);
+    p.style.left=Math.round(left)+'px';
+    p.style.top=Math.round(top)+'px';
+  }
+  function hintShow(id){
+    var m=$(HINT_MARK[id]),p=$('hintpop');
+    if(!m)return;
+    if(hintCur)hintHide(false);
+    hintCur=id;
+    $('hintpoptext').innerHTML=HINT_HTML[id]||'';
+    p.hidden=false;
+    m.setAttribute('aria-expanded','true');
+    placePop();
+    hintMarkRead(id);
+  }
+  /* back=true hands focus to the mark: right for Escape and for the close button, wrong when the
+     card is dismissed by clicking somewhere else, where taking focus back fights the click. */
+  function hintHide(back){
+    if(!hintCur)return;
+    var m=$(HINT_MARK[hintCur]);
+    $('hintpop').hidden=true;
+    if(m){m.setAttribute('aria-expanded','false');if(back)m.focus();}
+    hintCur=null;
+  }
+  /* One delegated listener, because the CUSTOM mark is built by buildPalette and does not exist
+     when this line runs. */
+  document.addEventListener('click',function(e){
+    var mark=e.target.closest&&e.target.closest('.hintmark');
+    if(mark){
+      var id=HINT_IDS.filter(function(k){return HINT_MARK[k]===mark.id;})[0];
+      if(!id)return;
+      if(hintCur===id)hintHide(true);else hintShow(id);
+      return;
+    }
+    if(!hintCur)return;
+    if(e.target.closest&&e.target.closest('#hintpop'))return;
+    hintHide(false);
+  });
+  $('hintpopx').onclick=function(){hintHide(true);};
+  /* Capture phase: Escape also cancels a selection, and an open card should eat it first rather
+     than clearing someone's marquee behind the popover. */
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&hintCur){e.stopPropagation();e.preventDefault();hintHide(true);}
+  },true);
+  addEventListener('resize',placePop);
+  addEventListener('scroll',placePop,true);
+  syncMarks();   /* the two marks that exist now; CUSTOM's is synced again after buildPalette */
   /* the onboarding itself is not built yet — swallow the jump so the link can't scroll the page */
   /* ============================================================
      Onboarding — 5 pages, shown once (remembered in localStorage). Text is verbatim from Figma.
@@ -2774,6 +2857,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      ============================================================ */
   restoreState();
   buildPalette();
+  syncMarks();   /* the CUSTOM mark is one of buildPalette's children */
   renderPaints();
   setExportType('json');
   selectLayer(paletteOf(D())[0].k);
