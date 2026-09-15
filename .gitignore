@@ -1,7 +1,3 @@
 .DS_Store
 .claude/
 .promote-preview.html
-
-# Licensed fonts. Dinamo EULA v2.51 §10 forbids putting the fonts in public
-# repositories or on public servers; this repo is public, so they stay local.
-assets/fonts/
