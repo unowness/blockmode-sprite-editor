@@ -71,6 +71,9 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     --sig-press:20%;
     --sig-edge:100%;    /* hover keeps the full outline */
     --sig-ink:100%;     /* and the full label */
+    --green-rest:10%;   /* Export's own three, independent of the --sig-* set above */
+    --green-hover:20%;  /* dark glows further in */
+    --green-press:30%;
     /* SUPERSEDED by the pair below, kept for the numbers. The light theme's two signals lifted to
        carry on this ground. Same hues - the red at
        36 against its 39, the green at 136 against its 136 - so Clear is the same red and Save
@@ -99,7 +102,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
        would settle it; that is a decision, not an oversight.
        They are also two of the four paints, so a drawing can be the same red as Clear. That is
        the point of the choice rather than a side effect of it. */
-    --green:#8BBF05;
+    /* Export, from the operator's Figma (2026-09-21). Three values, not one at three opacities:
+       the fill, the outline and the word are named separately. Dark happens to share two. */
+    --green:#54D700;        /* outline */
+    --green-fill:#4EC800;   /* the wash behind it */
+    --green-ink:#54D700;    /* the word */
     --alert:#F05940;
     --btn-background:#1C1C1D;   /* neutral like the rest of the ramp — this one was missed */
     --canvas:#1C1C1D;  /* glyph tiles are controls too */
@@ -244,6 +251,9 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     --sig-press:8%;
     --sig-edge:50%;
     --sig-ink:50%;
+    --green-rest:10%;   /* the Figma value, the same in both themes */
+    --green-hover:4%;   /* light lifts off its tint, as every other control here does */
+    --green-press:16%;
     /* Export is built like Clear again - transparent, outline and label in its own colour - which
        settles the green: read as ink on white it has to be dark, and at this lightness a
        yellow-green is an olive. The acid version only worked as a fill.
@@ -261,7 +271,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
        compliant where at #00FF00 it read 1.34. The LABEL still is not - text wants 4.5, and that
        is L* 50, #008B00, 4.36 - close but not there. That last step is available and it is a
        decision, not an oversight. */
-    --green:#8BBF05;
+    /* Export, from the operator's Figma (2026-09-21). The word is a step darker than the
+       outline, which is what lets it be read as text on this ground rather than seen as signal. */
+    --green:#29C200;        /* outline */
+    --green-fill:#29C200;   /* the wash behind it */
+    --green-ink:#25A500;    /* the word */
     --alert:#F05940;
     --glyph:#202020;
     --canvas-empty:var(--page);
@@ -330,7 +344,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   /* Export is the primary action and it is filled, so its colour can be as bright as it likes —
      the label contrasts against the fill, not against the page. */
   /* Outline only: the background stays the surface, the contour and the word carry the colour. */
-  .btn.green{background:color-mix(in srgb,var(--green) var(--sig-fill),transparent);border-color:var(--green);color:var(--green);}
+  /* Export no longer reads --sig-fill: its rest state is a flat 10% of its own fill colour in
+     both themes, which is what the Figma says. Clear still runs on --sig-fill, so the two stop
+     being forced through one recipe. */
+  .btn.green{background:color-mix(in srgb,var(--green-fill) var(--green-rest),transparent);
+    border-color:var(--green);color:var(--green-ink);}
   /* Coloured/active buttons brighten by the same 10% — they used to FADE to 50% opacity, which
      read as the button going away under the cursor instead of lighting up. */
   .btn.alert:not(:disabled):hover{background:color-mix(in srgb,var(--alert) var(--sig-wash),transparent);
@@ -340,9 +358,11 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      together, lifts 20%. Adding the 10% mix on top would brighten its border twice. */
   /* hover and press lift the fill towards the label, which is lighter on dark and darker on
      light — one rule, no need to ask which theme is on */
-  #export:not(:disabled):hover{background:color-mix(in srgb,var(--green) var(--sig-wash),transparent);
-    border-color:color-mix(in srgb,var(--green) var(--sig-edge),transparent);
-    color:color-mix(in srgb,var(--green) var(--sig-ink),transparent);}
+  /* Only the rest state came from Figma. Hover and press keep this file's own principle -- light
+     LIFTS off its resting tint, dark GLOWS further into it -- moved to sit either side of the new
+     10% instead of the old 5/0. Outline and word no longer move: they are named colours now, not
+     opacities of a third one. */
+  #export:not(:disabled):hover{background:color-mix(in srgb,var(--green-fill) var(--green-hover),transparent);}
   .btn:disabled{opacity:.35;cursor:default;background:var(--btn-background);border-color:var(--stroke);color:var(--tool-text-id);}
 
   /* ---------------- inputs ---------------- */
@@ -367,7 +387,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   .onb__cta:active,.hint-x:active{
     background-image:linear-gradient(color-mix(in srgb,var(--main-text) 12%,transparent),
                                      color-mix(in srgb,var(--main-text) 12%,transparent));}
-  #export:not(:disabled):active{background:color-mix(in srgb,var(--green) var(--sig-press),transparent);}
+  #export:not(:disabled):active{background:color-mix(in srgb,var(--green-fill) var(--green-press),transparent);}
 
   /* ---------------- tabs ---------------- */
   .tabs{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
