@@ -569,12 +569,12 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
         /* fit-content, not auto: a note is as wide as the sentence in it. auto let the two section
            hints fill the column, so a 149-character line and a 87-character one drew the same
            944px slab and the page read as three identical grey bands. */
-        /* fit-content bounded by a MEASURE, not by the column. Unbounded, a 149-character line
-           simply drew itself 900px wide and the box was back to the column's edge; at 576 the
-           sentence wraps where a sentence should and the box is as wide as the text it holds.
-           576 is the width the inline note already found for itself (575), so the three notes on
-           the page are now variations of one size rather than two bands and a chip. */
-        width:fit-content;max-width:min(576px,100%);
+        /* As wide as the sentence in it, full stop. The 576 measure that was here briefly made
+           every note two or three lines deep, and a note that wraps stops looking like a note:
+           the operator's read is that a hint is one line. So the box follows the copy, each of
+           the three coming out its own width, and the column is ragged the way the glyph groups
+           around it already are. */
+        width:fit-content;max-width:100%;
         /* A quiet grey step off the page, and no hairline at all. The fill is mixed from the INK
            rather than named per theme, so it goes the right way in both: darker than the page on
            paper, lighter than it on black.
