@@ -793,6 +793,17 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
        sideways. Let a tool break its row on phones; the label column stays put. */
     .tool{flex-wrap:wrap;}
     .tool>.tool-label{flex:none;}
+    /* Paint put its label on a line of its own here while Custom, two blocks below, kept its
+       label in the left column -- same shape of block, two different answers on one screen.
+       The cause is which box does the wrapping: .pgrid is sized by the column and wraps its own
+       cells, while .paints was sized by its contents, so the whole pill group was too wide to
+       share a line with the label and broke to the next one entire. Giving it the rest of the
+       row makes the pills wrap inside it, the way the glyph cells already do. */
+    #paintgroup>.paints{flex:1 1 0;min-width:0;}
+    /* And the same label column, so the two blocks start their content on one line rather than
+       at 72 and 87. 48 is not a guess: it is the fixed label width sizePaletteColumns() gives
+       every group in the palette below. */
+    #paintgroup>.tool-label{width:48px;}
     #export{flex:1;}   /* Export takes the rest of the line it lands on instead of a 116px stub */
     #play .pw,#stop .pw{display:none;}
     .pgroup{width:100%;}
