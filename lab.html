@@ -591,7 +591,15 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      controls leave less room than that beside it, the bar's own wrap drops it to the next line -
      no min-width needed, because its natural width already is the threshold.
      The gap matches this one's 8px edge, not the 9px the section hints use. */
-  .hint-inline{margin:0;padding:8px 8px 8px 16px;gap:8px;width:fit-content;}
+  /* NOT bounded by the 576 measure the two section notes take. This one's sentence is 575 wide
+     at 13px, so a 576 cap left it one pixel of room: any drift in how the text renders -- a
+     larger UI font, a zoom, a different face -- wrapped it to a second line, and a 73px note
+     beside a 50px tool tears the row it rides in. It never needed the cap: it is compact already,
+     and the cap exists for the two notes that would otherwise fill the column.
+     flex:none with it, so that when the row genuinely runs out of space the bar wraps the whole
+     note to the next line -- which is what the original note here promised -- instead of
+     squeezing it narrow enough to need two lines. */
+  .hint-inline{margin:0;padding:8px 8px 8px 16px;gap:8px;width:fit-content;max-width:none;flex:none;}
   /* Block, not flex. It WAS a flex container, to centre one line against the 32px X - and that is
      exactly what ate the space before the link: a flex container turns each run of text into an
      anonymous item and strips the whitespace at its edges, so "more at " + <a> rendered as
