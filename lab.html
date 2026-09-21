@@ -772,6 +772,19 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     background:var(--accent-wash);
     color:color-mix(in srgb,var(--accent) 50%,transparent);}
 
+  /* The theme switch is a GLYPH, not a control with a body. The 32x32 box stays exactly as it was
+     -- it is the hit target, and it is what holds the header's right edge on the same rhythm as
+     every other icon control -- but nothing draws it, so the corner reads as an icon rather than
+     as a lone button standing in the white.
+     Hover and press therefore have to answer on the glyph itself: the generic hover above tints a
+     border and a fill this button no longer has, and the generic pressed state lays a 12% overlay
+     that would put back the very box being removed. Full accent on hover rather than the 50% the
+     other controls use -- half strength reads as weak on a bare 15px mark with nothing around it. */
+  #themetog{background:transparent;border-color:transparent;}
+  #themetog:not(:disabled):hover{background:transparent;border-color:transparent;color:var(--accent);}
+  #themetog:not(:disabled):active{background:transparent;background-image:none;
+    border-color:transparent;color:var(--accent);opacity:.55;}
+
   /* ============================================================
      Mobile (<=600px): icon controls, stacked tools/palette, common label column
      ============================================================ */
