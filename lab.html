@@ -1391,7 +1391,25 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     dt.setAttribute('aria-label',dt.title);
   }
   function selectTab(i){if(i===activeDoc)return;commitSelection();stop();activeDoc=i;ui.view='ascii';applyView();syncInputs();build();renderFrames();renderTabs();updateHist();}
-  function addTab(){commitSelection();stop();docs.push(newDoc('untitled '+docs.length));activeDoc=docs.length-1;ui.view='ascii';applyView();syncInputs();build();renderFrames();renderTabs();updateHist();}
+  /* A new tab opens as a COPY of the one you were on. That is what a second tab is for here --
+     a variant of the thing in front of you -- and starting from blank meant setting the size
+     again, picking the palette again and re-stocking the Custom row before the variant could
+     even begin. Clear still gives you the empty sheet in one click if that is what you wanted.
+     The frames and the palette go through JSON: a cell is {g,l} and a paint is {k,name,color},
+     both plain data, and a shallow copy would have the two tabs drawing into one grid.
+     The undo stack does NOT come along -- the copy's history starts where the copy does -- and
+     the name does not either: two chips reading the same word is worse than one reading '2'. */
+  function cloneDoc(src,name){
+    return { name:name, id:src.id?src.id+' copy':'',
+             w:src.w, h:src.h,
+             palette:JSON.parse(JSON.stringify(paletteOf(src))),
+             bgOn:src.bgOn, bgColor:src.bgColor,
+             custom:(src.custom||[]).slice(0,20),
+             lock:(src.lock||[]).slice(0,20),
+             frames:JSON.parse(JSON.stringify(src.frames)),
+             active:src.active, fps:src.fps, _undo:[], _redo:[] };
+  }
+  function addTab(){commitSelection();stop();docs.push(cloneDoc(D(),'untitled '+docs.length));activeDoc=docs.length-1;ui.view='ascii';applyView();syncInputs();build();renderFrames();renderTabs();updateHist();}
   /* a tab holds a sprite and its own undo stack, and closing was the one action that destroyed
      work with no confirm and no way back. Ask only when there IS work — an untouched scratch tab
      closes silently, so the prompt stays meaningful. */
