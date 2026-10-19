@@ -660,6 +660,10 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   .gbtn{width:32px;height:32px;font-family:var(--font-mono);font-size:17px;color:var(--glyph);
         background:var(--canvas);border:1px solid var(--stroke);border-radius:var(--r-btn);cursor:pointer;padding:0;}
   .gbtn.on{background:var(--accent-bg);border-color:var(--accent-edge);color:var(--accent-label);}
+  /* Pinned: the border steps up one value, from the resting stroke to the hovered one. That is
+     the whole mark. It has to be visible enough to answer "why did that one stay and this one
+     go", and quiet enough that twenty cells do not turn into twenty badges. */
+  .gbtn.custom.pinned{border-color:color-mix(in srgb,var(--main-text) 30%,var(--stroke));}
 
   /* ---------------- export bar ---------------- */
   /* the JSON box carries the 40px section gap now; the export bar hangs off it at 8px */
@@ -1255,7 +1259,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     w=w||8; h=h||6;
     return { name:name||'untitled', id:'', w:w, h:h,
              palette:defaultPalette(),
-             bgOn:false, bgColor:DEFAULTS.bgColor, custom:[],
+             bgOn:false, bgColor:DEFAULTS.bgColor, custom:[], lock:[],
              frames:[blankGrid(w,h)], active:0, fps:8, _undo:[], _redo:[] };
   }
 
@@ -1354,12 +1358,12 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      3. History — per-document snapshots
      ============================================================ */
   function snap(){var d=D();return JSON.stringify({name:d.name,id:d.id,w:d.w,h:d.h,palette:paletteOf(d),
-    bgOn:d.bgOn,bgColor:d.bgColor,custom:d.custom,active:d.active,fps:d.fps,frames:d.frames});}
+    bgOn:d.bgOn,bgColor:d.bgColor,custom:d.custom,lock:d.lock,active:d.active,fps:d.fps,frames:d.frames});}
   function applySnap(str){
     var o=JSON.parse(str),d=D();
     d.name=o.name;d.id=o.id;d.w=o.w;d.h=o.h;
     d.palette=o.palette?normalizePalette(o.palette):paletteFromLegacy(o);
-    d.bgOn=o.bgOn;d.bgColor=o.bgColor;d.custom=o.custom||[];d.active=o.active;d.fps=o.fps;d.frames=o.frames;
+    d.bgOn=o.bgOn;d.bgColor=o.bgColor;d.custom=o.custom||[];d.lock=o.lock||[];d.active=o.active;d.fps=o.fps;d.frames=o.frames;
     clearSelection();syncInputs();build();renderFrames();renderTabs();
   }
   function pushUndo(){var d=D();d._undo.push(snap());if(d._undo.length>HISTORY_LIMIT)d._undo.shift();d._redo.length=0;updateHist();}
@@ -1519,6 +1523,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     var d=D(),g=curGrid(),glyph=ui.curGlyph,layer=ui.curLayer;
     setCell(g,x,y,glyph,layer);
     if(ui.mirror){var mx=d.w-1-x;if(mx!==x)setCell(g,mx,y,glyph===' '?' ':mir(glyph),layer);}
+    pushRecent(glyph);   /* the Custom row stocks itself from what actually gets drawn */
     render();
   }
   /* The second mouse button used to erase. It SAMPLES now: whatever is in the cell becomes the
@@ -1669,7 +1674,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   function makeCustomCell(i){
     var ch=D().custom[i]||'';
     var b=document.createElement('div');
-    b.className='gbtn custom'+(ch&&ch===ui.curGlyph?' on':'');
+    b.className='gbtn custom'+(ch&&ch===ui.curGlyph?' on':'')+((D().lock||[])[i]&&ch?' pinned':'');
     b.dataset.idx=i;b.spellcheck=false;b.textContent=ch;
     if(!isCoarse()){                       /* fine pointer (desktop): inline-edit, Ctrl+V, Backspace */
       b.setAttribute('contenteditable','true');
@@ -1683,18 +1688,55 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   }
   function fillCustomGrid(grid){if(!grid)return;grid.innerHTML='';for(var i=0;i<20;i++)grid.appendChild(makeCustomCell(i));}
   /* the palette CUSTOM row and the fullscreen Custom panel mirror the same d.custom data */
-  function buildCustomRow(){var d=D();if(!d.custom)d.custom=[];fillCustomGrid($('customgrid'));}
+  /* A document written before the row kept a history has glyphs but no locks, and every one of
+     those glyphs got there by hand -- there was no other way in. So they are all pinned, and an
+     old sprite opens with its Custom row exactly as its author left it. */
+  function normalizeLock(d){
+    if(Array.isArray(d.lock))return;
+    d.lock=[];for(var i=0;i<20;i++)d.lock[i]=!!(d.custom||[])[i];
+  }
+  function buildCustomRow(){var d=D();if(!d.custom)d.custom=[];normalizeLock(d);fillCustomGrid($('customgrid'));}
   function firstGlyph(s){s=(s||'').replace(/[\r\n\t]/g,'');var a=Array.from(s);return a.length?a[0]:'';}
   /* update cell i in BOTH grids in place (no full rebuild -> keeps caret/focus while editing) */
   function syncCustomCell(i,ch){
-    [].forEach.call(document.querySelectorAll('.gbtn.custom[data-idx="'+i+'"]'),function(c){if(c.textContent!==ch)c.textContent=ch;});
+    var pinned=!!(D().lock||[])[i];
+    [].forEach.call(document.querySelectorAll('.gbtn.custom[data-idx="'+i+'"]'),function(c){
+      if(c.textContent!==ch)c.textContent=ch;
+      c.classList.toggle('pinned',pinned&&!!ch);
+    });
   }
   /* blur: commit only. NEVER re-select the glyph here — doing so stole the selection back
      when the blur was caused by clicking a neighbouring custom cell. */
-  function customCommit(b){putCustom(+b.dataset.idx,firstGlyph(b.textContent));}
+  function customCommit(b){pinCustom(+b.dataset.idx,firstGlyph(b.textContent));}
   /* store / clear one custom cell — updates both grids, the doc and the autosave */
   function putCustom(i,ch){D().custom[i]=ch;syncCustomCell(i,ch);refreshCustomActive();updateOut();}
-  function clearCustom(i){D().custom[i]='';syncCustomCell(i,'');refreshCustomActive();updateOut();}
+  /* A glyph the person put there themselves is PINNED: the history below flows around it and
+     never takes its slot. Everything that reaches a cell by hand -- a click on an empty cell,
+     typing, a paste -- comes through here. */
+  function pinCustom(i,ch){var d=D();if(!d.lock)d.lock=[];d.lock[i]=!!ch;putCustom(i,ch);}
+  function clearCustom(i){var d=D();if(d.lock)d.lock[i]=false;d.custom[i]='';syncCustomCell(i,'');refreshCustomActive();updateOut();}
+
+  /* ---- the Custom row as a history ----
+     Draw with a glyph and it arrives at the head of the row; draw with another and the first
+     slides one place along. The row fills itself by use, so the panel stops being something you
+     have to stock before it is worth anything.
+     Pinned cells are anchors: they keep their place and their glyph, and the history flows
+     through whatever slots are left. If every slot is pinned there is nowhere to flow, and
+     nothing happens -- which is the right answer, because the person has said what they want
+     this row to hold. */
+  function pushRecent(g){
+    if(!g||g===' ')return;                      /* the eraser is not a glyph worth remembering */
+    var d=D(),cu=d.custom||(d.custom=[]),lk=d.lock||(d.lock=[]);
+    var at=cu.indexOf(g);
+    if(at>=0&&lk[at])return;                    /* already pinned: it is where its owner put it */
+    var free=[],i;
+    for(i=0;i<20;i++)if(!lk[i])free.push(i);
+    if(!free.length)return;
+    if(cu[free[0]]===g)return;                  /* already at the head -- the common case mid-drag */
+    var seq=[g];
+    free.forEach(function(j){var c=cu[j];if(c&&c!==g)seq.push(c);});
+    free.forEach(function(j,n){if(cu[j]!==(seq[n]||''))putCustom(j,seq[n]||'');});
+  }
   function customMouseDown(e){
     var b=e.currentTarget,i=+b.dataset.idx,ch=D().custom[i]||'';
     var cur=(ui.curGlyph&&ui.curGlyph!==' ')?ui.curGlyph:'';
@@ -1704,7 +1746,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     }
     if(cur){                                 /* empty + a palette glyph selected -> store it. Mouse AND touch, no clipboard. */
       e.preventDefault();                    /* no focus/caret: the next cell stays clickable right away */
-      putCustom(i,cur);
+      pinCustom(i,cur);
       deselectGlyph();                       /* one pick = one insert; the selection resets so it's obvious */
       return;
     }
@@ -1712,7 +1754,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
       e.preventDefault();
       if(navigator.clipboard&&navigator.clipboard.readText){
         navigator.clipboard.readText().then(function(t){var g=firstGlyph((t||'').replace(/\s/g,''))||firstGlyph(t||'');
-          if(g){putCustom(i,g);setGlyph(g);}}).catch(function(){});
+          if(g){pinCustom(i,g);setGlyph(g);}}).catch(function(){});
       }
     }
     /* desktop with nothing selected: just focus the cell for typing / Ctrl+V */
@@ -1728,13 +1770,13 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   }
   function customInput(e){var b=e.currentTarget,a=Array.from(b.textContent||''),ch=a.length?a[a.length-1]:'';
     if(a.length>1){b.textContent=ch;placeCaretEnd(b);}
-    putCustom(+b.dataset.idx,ch);                             /* commit on every keystroke, never rely on blur */
+    pinCustom(+b.dataset.idx,ch);                            /* commit on every keystroke, never rely on blur */
     if(ch)setGlyph(ch);}                                      /* a typed glyph becomes the active one right away */
   function customPaste(e){e.preventDefault();
     var t=((e.clipboardData||window.clipboardData)||{}).getData?((e.clipboardData||window.clipboardData).getData('text')||''):'';
     var ch=firstGlyph(t.replace(/\s/g,''))||firstGlyph(t);
     if(!ch&&ui.curGlyph&&ui.curGlyph!==' ')ch=ui.curGlyph;   /* empty clipboard -> drop in the selected palette glyph */
-    var b=e.currentTarget;if(ch){b.textContent=ch;placeCaretEnd(b);putCustom(+b.dataset.idx,ch);setGlyph(ch);}}   /* commit + select immediately */
+    var b=e.currentTarget;if(ch){b.textContent=ch;placeCaretEnd(b);pinCustom(+b.dataset.idx,ch);setGlyph(ch);}}   /* commit + select immediately */
   function refreshCustomActive(){[].forEach.call(document.querySelectorAll('.gbtn.custom'),function(b){var ch=D().custom[+b.dataset.idx]||'';setOn(b,!!ch&&ch===ui.curGlyph);});}
   function placeCaretEnd(el){var r=document.createRange();r.selectNodeContents(el);r.collapse(false);var s=window.getSelection();s.removeAllRanges();s.addRange(r);}
 
@@ -2015,6 +2057,10 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
       body_color:col(0),accent_color:col(1),decoration_color:col(2),extra_color:col(3),
       background_color:d.bgOn?d.bgColor:null,fps:d.fps,active:d.active,
       custom_glyphs:(function(){var a=(d.custom||[]).slice(0,20),last=-1,i;for(i=0;i<a.length;i++)if(a[i])last=i;var out=[];for(i=0;i<=last;i++)out.push(a[i]||'');return out;})(),  /* keep cell positions (internal gaps as ''), trim trailing empties */
+      /* Which of those the person pinned, as indices -- a v4 reader that has never heard of this
+         ignores the field and simply gets the row as it looked, which is the whole of the old
+         behaviour. */
+      custom_pinned:(function(){var lk=d.lock||[],out=[],i;for(i=0;i<20;i++)if(lk[i]&&(d.custom||[])[i])out.push(i);return out;})(),
       frames:frames,
       glyphs:top.glyphs,colors:top.colors,accent_mask:top.accent_mask   /* legacy single-frame consumers */
     },null,2);
@@ -2028,6 +2074,8 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
     var keys=paletteKeys(d);
     d.bgOn=!!o.background_color;d.bgColor=o.background_color||d.bgColor;
     d.custom=Array.isArray(o.custom_glyphs)?o.custom_glyphs.slice(0,20):(d.custom||[]);
+    if(Array.isArray(o.custom_pinned)){d.lock=[];o.custom_pinned.forEach(function(i){if(i>=0&&i<20)d.lock[i]=true;});}
+    else{d.lock=null;normalizeLock(d);}   /* a file from before this existed: all of it is by hand */
     if(o.fps)d.fps=o.fps;
     if(o.frames&&o.frames.length){
       var f0=o.frames[0]||{},w=o.width||((f0.glyphs&&f0.glyphs[0])||'').length,h=o.height||(f0.glyphs?f0.glyphs.length:0);
@@ -2661,9 +2709,13 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
      never named its object. The touch line stays at 800 and is not padded: it wraps on a phone
      whatever it says. innerHTML rather than textContent because of the link, and the string is
      this file's own - nothing typed by anyone reaches it. */
-  $('hinttext').innerHTML=isCoarse()
-    ? 'Custom panel: pick a glyph, then tap an empty cell to keep it. Tap a kept glyph to draw with it, tap again to clear \u2014 more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'.'
-    : 'Custom panel: pick a glyph and click on an empty cell to keep it, or type / paste your own \u2014 thousands more at '+'<a href="https://glyphy.io/cool-symbols" target="_blank" rel="noopener">glyphy.io</a>'+'. Backspace clears a cell.';
+  /* Rewritten when the row started stocking itself. It no longer has to teach the mechanic --
+     the row demonstrates it within three strokes -- so it says only the part that is not
+     self-evident: that a glyph you put there by hand is the one the history will not move.
+     The glyphy link left the sentence because it is an icon at the end of the row it describes. */
+  $('hinttext').textContent=isCoarse()
+    ? 'This row fills itself as you draw. Add a glyph by hand and it stays put.'
+    : 'This row fills itself as you draw. A glyph you add by hand stays put \u2014 Backspace clears one.';
   /* `hidden` rather than an inline display:none, so the stylesheet can see the dismissal and move
      the section gap down to the paint bar */
   $('hintx').onclick=function(){closeHint('hint');};
@@ -2802,7 +2854,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
   function serializeState(){
     return JSON.stringify({v:1,active:activeDoc,docs:docs.map(function(d){
       return {name:d.name,id:d.id,w:d.w,h:d.h,palette:paletteOf(d),
-        bgOn:d.bgOn,bgColor:d.bgColor,custom:d.custom,frames:d.frames,active:d.active,fps:d.fps};
+        bgOn:d.bgOn,bgColor:d.bgColor,custom:d.custom,lock:d.lock,frames:d.frames,active:d.active,fps:d.fps};
     })});
   }
   function saveState(){try{localStorage.setItem(LS_KEY,serializeState());}catch(e){}}   /* ignore quota / private mode */
@@ -2822,6 +2874,7 @@ try{if(localStorage.getItem('blockmode:lab:theme')==='dark')document.documentEle
         d.palette=Array.isArray(s.palette)?normalizePalette(s.palette):paletteFromLegacy(s);
         d.bgOn=s.bgOn!==false;d.bgColor=s.bgColor||d.bgColor;
         d.custom=Array.isArray(s.custom)?s.custom.slice(0,20):[];
+        d.lock=Array.isArray(s.lock)?s.lock.slice(0,20):null;normalizeLock(d);
         d.fps=s.fps||d.fps;d.frames=s.frames;d.active=Math.min(s.active||0,s.frames.length-1);
         return d;
       });
