@@ -1,22 +1,37 @@
 /* Onboarding page 3, "Pick up what is already there": the right button samples a cell.
 
-   Three beats on nox (tools/onboarding/nox_idle.json, one of the product's own sprites). Sample an
-   eye and give nox two buttons with what comes back; sample the head and draw a ground with it;
-   sample an empty cell - which hands back the eraser - and take the ground away again. Each sample
-   is answered on screen by the Paint bar, the Custom row and the Eraser button, which is the whole
-   point of the page.
+   nox (tools/onboarding/nox_idle.json, one of the product's own sprites) is on the canvas with
+   its right side unfinished: the eye, half the brow, half the nose, the shoulder and the foot
+   are missing there. Every one of those marks already exists on the left, so the demo finishes
+   the sprite by picking each one up with the right button and putting it down where it belongs.
+   Each sample is answered on screen by the Paint bar and the Custom row, which is the whole point
+   of the page; a last sample of an empty cell shows the Eraser light up.
+
+   Mirror stays on, as it is for a new sprite: every mark placed here lands on the axis of the
+   sprite's own symmetry, so its twin on the left receives the glyph it already has. The cells the
+   demo does NOT draw (the right ear and the brow's corner) are the ones whose glyph only exists
+   mirrored on the left - sampling hands back a glyph as it is, so they stay drawn from the start.
 
        node tools/onboarding/record.js tools/onboarding/sample.js --out assets/onboarding/onboarding_3.gif */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-/* nox is 8x6; it goes on a 10x9 canvas with a cell to spare on each side, two rows of air over
-   the ears and the bottom row free, so the ground gets a row of its own under the feet and there
-   is an empty cell to sample. Nine rows rather than eight because the frame is 648 CSS px tall:
-   with a shorter stage the row above it or the glyph row below it shows a sliver at the edge. */
+/* nox is 8x6; it goes on a 10x8 canvas, one cell in from every edge */
 const sprite = JSON.parse(fs.readFileSync(path.join(__dirname, 'nox_idle.json'), 'utf8'));
-const W = 10, H = 9, OX = 1, OY = 2;
+const W = 10, H = 8, OX = 1, OY = 1;
+
+/* what the demo draws, in canvas cells: [x, y] of the cell and the cell it is sampled from */
+const MISSING = [
+  { at: [7, 4], from: [2, 4] },   /* right eye   @  <- left eye */
+  { at: [7, 3], from: [2, 3] },   /* right cheek █  <- left cheek (the paint goes back to Main) */
+  { at: [5, 3], from: [4, 3] },   /* brow        ▔  <- the other half of the brow */
+  { at: [5, 4], from: [3, 6] },   /* nose        ▝  <- the left foot has that glyph */
+  { at: [7, 5], from: [3, 6] },   /* shoulder    ▝  <- same */
+  { at: [6, 6], from: [2, 5] },   /* right foot  ▘  <- the left shoulder has that glyph */
+];
+const blank = {};
+MISSING.forEach(m => { blank[m.at.join(',')] = true; });
 
 /* the same reading loadJSON() gives a file of this age: no `colors`, so a cell is Accent where
    accent_mask says X and Main everywhere else, and an empty cell carries Main */
@@ -26,7 +41,8 @@ function toGrid(frame) {
     const row = [];
     for (let x = 0; x < W; x++) {
       const sx = x - OX, sy = y - OY;
-      const ch = (frame.glyphs[sy] && frame.glyphs[sy][sx]) || ' ';
+      let ch = (frame.glyphs[sy] && frame.glyphs[sy][sx]) || ' ';
+      if (blank[x + ',' + y]) ch = ' ';
       const acc = frame.accent_mask && frame.accent_mask[sy] && frame.accent_mask[sy][sx] === 'X';
       row.push({ g: ch, l: ch !== ' ' && acc ? 'a' : 'b' });
     }
@@ -56,7 +72,6 @@ module.exports = {
   },
 
   async setup(page) {
-    await page.click('#mirror');            /* Mirror starts on; off, so a stroke lands where the cursor is */
     await page.click('[data-zoom="1"]');    /* one step in: nox reads better, and the taller stage fills the frame */
     await page.mouse.move(760, 300);
     await page.waitForTimeout(250);
@@ -74,38 +89,26 @@ module.exports = {
   timeline({ cell, geo }) {
     /* empty stage to the right of the grid, clear of the grid's resize handles */
     const rest = { x: geo.grid.left + geo.grid.w + 170, y: geo.grid.top + geo.grid.h * 0.45 };
-    const eye = cell(OX + 1, OY + 3), head = cell(OX + 3, OY + 1), empty = cell(W - 1, 0);
-    const buttonA = cell(OX + 3, OY + 4), buttonB = cell(OX + 4, OY + 4);
-    const groundA = cell(2, H - 1), groundB = cell(7, H - 1);
-    return [
-      { t: 0.0, ...rest },
-      { t: 1.0, ...rest },
-      { t: 2.2, ...eye },
-      { t: 2.2, ...eye, event: 'rclick' },      /* brush = @ in Accent */
-      { t: 3.0, ...eye },
-      { t: 4.0, ...buttonA },
-      { t: 4.0, ...buttonA, event: 'down' },
-      { t: 4.8, ...buttonB },
-      { t: 4.8, ...buttonB, event: 'up' },
-      { t: 5.4, ...buttonB },
-      { t: 6.4, ...head },
-      { t: 6.4, ...head, event: 'rclick' },     /* brush = █ in Main */
-      { t: 7.1, ...head },
-      { t: 8.0, ...groundA },
-      { t: 8.0, ...groundA, event: 'down' },
-      { t: 9.4, ...groundB },
-      { t: 9.4, ...groundB, event: 'up' },
-      { t: 10.0, ...groundB },
-      { t: 10.9, ...empty },
-      { t: 10.9, ...empty, event: 'rclick' },   /* brush = blank: the Eraser lights up */
-      { t: 11.7, ...empty },
-      { t: 12.6, ...groundB },
-      { t: 12.6, ...groundB, event: 'down' },
-      { t: 14.0, ...groundA },
-      { t: 14.0, ...groundA, event: 'up' },
-      { t: 14.6, ...groundA },
-      { t: 15.4, ...rest },
-      { t: 16.4, ...rest },
-    ];
+    const empty = cell(W - 1, 0);
+    const keys = [{ t: 0.0, ...rest }, { t: 1.0, ...rest }];
+    /* one beat per missing mark: go to its source, sample, go to its place, put it down.
+       The same source twice (the foot) is sampled once and used twice. */
+    let t = 1.0, lastFrom = null;
+    MISSING.forEach(m => {
+      const from = cell(m.from[0], m.from[1]), at = cell(m.at[0], m.at[1]);
+      if (m.from.join() !== lastFrom) {
+        t += 0.9; keys.push({ t, ...from }, { t, ...from, event: 'rclick' });
+        t += 0.6; keys.push({ t, ...from });
+        lastFrom = m.from.join();
+      }
+      t += 0.8; keys.push({ t, ...at }, { t, ...at, event: 'click' });
+      t += 0.4; keys.push({ t, ...at });
+    });
+    /* and an empty cell hands back the eraser */
+    t += 0.9; keys.push({ t, ...empty }, { t, ...empty, event: 'rclick' });
+    t += 0.8; keys.push({ t, ...empty });
+    t += 1.0; keys.push({ t, ...rest });
+    t += 1.0; keys.push({ t, ...rest });
+    return keys;
   },
 };
