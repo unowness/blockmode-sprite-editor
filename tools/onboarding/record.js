@@ -6,8 +6,10 @@
    assembled into a GIF with ffmpeg. Capture is not real time - a frame takes as long as it takes
    to screenshot - so the result is deterministic and the same scenario gives the same GIF.
 
-   Geometry matches the recordings already in assets/onboarding: 1184x738, which is a 987x615 CSS
-   viewport at 1.2x (the originals are Retina recordings of a ~987px-wide window scaled to 1184).
+   Geometry matches the recordings already in assets/onboarding: 1184x738, from a 1040x648 CSS
+   viewport at 1.138x (the originals are Retina recordings of a ~1000px-wide window scaled to
+   1184). 1040 is the narrowest window that shows the full desktop layout: the content is 960
+   wide there, which is the width the Custom row needs to hold its 20 cells on one line.
 
        node tools/onboarding/record.js tools/onboarding/sample.js --out assets/onboarding/onboarding_3.gif
        node tools/onboarding/record.js tools/onboarding/sample.js --still still.png    # first frame only
@@ -18,7 +20,7 @@
    A scenario module exports:
      state          the sprite to put on the canvas, in the editor's localStorage format (v:1)
      setup(page)    optional - real clicks on the controls before the first frame (toggle Mirror, ...)
-     scrollTo()     runs in the page; returns the window scrollY that frames the shot
+     scrollTo(h)    runs in the page, h is the viewport height; returns the scrollY that frames the shot
      timeline(g)    keyframes [{t, x, y, event?}] in viewport CSS px, sorted by t. The cursor eases
                     between them; an event ('rclick' | 'click' | 'down' | 'up') fires at its t.
                     g.cell(x,y) gives a grid cell's centre, g.geo the stage/paint/custom boxes. */
@@ -31,7 +33,7 @@ const { execFileSync, spawnSync } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const FPS = 30;
-const VIEW = { width: 987, height: 615 }, DPR = 1.2;   /* -> 1184x738 */
+const VIEW = { width: 1040, height: 648 }, DPR = 1184 / 1040;   /* -> 1184x738 */
 
 /* ---- arguments ---- */
 const argv = process.argv.slice(2), opts = {};
@@ -123,7 +125,7 @@ const ease = t => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);  
     const pulse = document.createElement('div'); pulse.id = '__pulse'; document.body.appendChild(pulse);
   }, { css: CURSOR_CSS, html: CURSOR_HTML });
 
-  const scrollY = await page.evaluate(scenario.scrollTo);
+  const scrollY = await page.evaluate(scenario.scrollTo, VIEW.height);
   await page.evaluate(y => window.scrollTo(0, y), scrollY);
   await page.waitForTimeout(100);
 
