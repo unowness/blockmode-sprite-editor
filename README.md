@@ -126,6 +126,8 @@ assets/onboarding/         the first-run walkthrough images
 vendor/mp4-muxer.min.js    vendored WebCodecs MP4 muxer, loaded on first export
 tools/make-lab.py          regenerate lab.html from index.html
 tools/promote-lab.py       the inverse: ship lab.html as index.html
+tools/onboarding/          record an onboarding GIF from a scripted scenario
+                           (Playwright + ffmpeg); sample.js is the sampling page
 blockmode-opengraph.png    social preview; its URL is public, so it stays at the root
 CNAME, .nojekyll           GitHub Pages, which serves this repository from the root
 ```

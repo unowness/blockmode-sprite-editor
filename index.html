@@ -2778,15 +2778,16 @@ try{if(localStorage.getItem('blockmode:theme')==='dark')document.documentElement
      text:'Blockmode is a sprite editor where every pixel is a character. You paint with block and box-drawing glyphs on a grid. Pick a glyph from the palette, choose a paint, then draw on the grid. Nothing installs and nothing uploads. It is one page in your browser.'},
     {img:'assets/onboarding/onboarding_2.gif',title:'Paint and erase',
      text:'Pick a glyph from the palette, pick a paint, then click or drag across the grid. Hold and drag to fill a run of cells in one stroke. The Eraser under the canvas clears cells the same way you paint them. Undo sits under the canvas too, or Ctrl/Cmd+Z — and every sprite keeps its own undo history.'},
-    /* img is empty until this one is recorded; onbRender hides the frame rather than drawing an
-       empty bordered strip. */
-    {img:'',title:'Pick up what is already there',
+    /* The files are numbered by page, so this one is _3 and the three after it moved up a number
+       when it was recorded. An empty img is still allowed: onbRender hides the frame rather than
+       drawing an empty bordered strip. */
+    {img:'assets/onboarding/onboarding_3.gif',title:'Pick up what is already there',
      text:'Right-click any cell to sample it. Its glyph and the paint it was drawn with both become your brush, so a mark you liked can be carried across the sprite without hunting for it in the palette again. On a touch screen, hold a cell for a moment instead. Sampling an empty cell hands you a blank — paint with that and you are erasing, the same thing the Eraser under the canvas does.'},
-    {img:'assets/onboarding/onboarding_3.gif',title:'Color and Background',
+    {img:'assets/onboarding/onboarding_4.gif',title:'Color and Background',
      text:'You draw in paints, not in colors. Four to start with — Main, Accent, Detail and Extra — and + adds more, up to 16 per sprite. Every cell remembers which paint it belongs to, so recoloring a whole sprite is one click, not a repaint. Background sits behind your sprite. Turn it off to export transparent PNGs and SVGs.'},
-    {img:'assets/onboarding/onboarding_4.gif',title:'Select and Mirror',
+    {img:'assets/onboarding/onboarding_5.gif',title:'Select and Mirror',
      text:'Use Select to move or remove part of a sprite. Drag a box around it, then drag the box itself to reposition — with a keyboard, arrow keys nudge it one cell at a time and Delete clears it. Mirror starts on, so your marks are reflected across the centre line. Turn it off for asymmetrical details; it never changes what is already on the grid.'},
-    {img:'assets/onboarding/onboarding_5.gif',title:'Save and Export',
+    {img:'assets/onboarding/onboarding_6.gif',title:'Save and Export',
      text:'Blockmode keeps your tabs, frames and Custom glyphs in this browser between sessions. But browser storage is not a backup: clear it, open Blockmode in another browser or device, and your work will be gone. Export JSON often to save your sprites properly and load them again whenever you want to continue.'}
   ];
   var onbEl=$('onb'),onbFrame=$('onbFrame'),onbTitle=$('onbTitle'),onbText=$('onbText'),onbCta=$('onbCta'),
